@@ -5,9 +5,6 @@ const port = process.env.PORT || 5000;
 const app = express();
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
-// username = taskmanagementDB
-//dbpass = yQFXQY60WtOicVrO
-
 app.use(cors());
 app.use(express.json());
 
@@ -23,10 +20,26 @@ async function run() {
     const addtaskcollection = client
       .db("taskmanagementDB")
       .collection("addtsks");
+    const taskcompletedcollection = client
+      .db("taskmanagementDB")
+      .collection("taskcompleted");
 
     app.post("/addtask", async (req, res) => {
       const query = req.body;
       const result = await addtaskcollection.insertOne(query);
+      res.send(result);
+    });
+
+    app.post("/taskcompleted", async (req, res) => {
+      const query = req.body;
+      const result = await taskcompletedcollection.insertOne(query);
+      res.send(result);
+    });
+
+    app.get("/taskcompleted", async (req, res) => {
+      const email = req.query.email;
+      const query = { email: email };
+      const result = await taskcompletedcollection.find(query).toArray();
       res.send(result);
     });
 
@@ -36,11 +49,51 @@ async function run() {
       const result = await addtaskcollection.find(query).toArray();
       res.send(result);
     });
+    app.get("/updatetaskall", async (req, res) => {
+      const query = {};
+      const result = await addtaskcollection.find(query).toArray();
+      res.send(result);
+    });
+
+    app.get("/updatetask/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = await addtaskcollection.findOne(query);
+      res.send(result);
+    });
+
+    app.put("/updatetask/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const user = req.body;
+      const options = { upsert: true };
+      const updatetask = {
+        $set: {
+          Task: user.Task,
+          image: user.image,
+          name: user.name,
+          email: user.email,
+        },
+      };
+      const result = await addtaskcollection.updateOne(
+        query,
+        updatetask,
+        options
+      );
+      res.send(result);
+    });
 
     app.delete("/taskdelete/:id", async (req, res) => {
       const id = req.params.id;
       const filter = { _id: ObjectId(id) };
       const result = await addtaskcollection.deleteOne(filter);
+      res.send(result);
+    });
+
+    app.delete("/taskcompleted/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: ObjectId(id) };
+      const result = await taskcompletedcollection.deleteOne(filter);
       res.send(result);
     });
   } finally {
